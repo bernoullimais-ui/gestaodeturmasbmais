@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { ClipboardList, Calendar, MapPin, Search, BookOpen, Clock, Lock, GraduationCap } from 'lucide-react';
 import { Aluno, Turma, Matricula, Usuario } from '../types';
@@ -11,7 +12,9 @@ interface PreparacaoTurmasProps {
 
 const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, matriculas, currentUser }) => {
   const isRegente = currentUser.nivel === 'Regente';
-  const isGestorOrEstagiario = currentUser.nivel === 'Gestor' || currentUser.nivel === 'Estagiário';
+  
+  // ATUALIZADO: Incluindo Gestor Master na permissão de troca de sigla
+  const isGestorOrEstagiario = currentUser.nivel === 'Gestor' || currentUser.nivel === 'Gestor Master' || currentUser.nivel === 'Estagiário';
   
   const idHoje = useMemo(() => {
     const d = new Date().getDay();
@@ -66,11 +69,7 @@ const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, mat
     return Array.from(s).sort((a, b) => {
       const priorityA = getEtapaPriority(a);
       const priorityB = getEtapaPriority(b);
-      
-      if (priorityA !== priorityB) {
-        return priorityA - priorityB;
-      }
-      
+      if (priorityA !== priorityB) return priorityA - priorityB;
       return a.localeCompare(b, 'pt-BR', { numeric: true });
     });
   }, [alunos]);
@@ -110,7 +109,7 @@ const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, mat
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Preparação de Turmas</h2>
-          <p className="text-slate-500">Logística de saída de alunos para cursos extras hoje.</p>
+          <p className="text-slate-500">Logística de saída para cursos extras.</p>
         </div>
         <div className="bg-amber-50 text-amber-700 px-4 py-2 rounded-xl border border-amber-100 flex items-center gap-2">
           <ClipboardList className="w-4 h-4" />
@@ -124,11 +123,7 @@ const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, mat
             Sigla Escolar {isRegente && <span className="text-blue-500 font-black">(FIXADO)</span>}
           </label>
           <div className="relative">
-            {isRegente ? (
-               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" />
-            ) : (
-               <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
-            )}
+            <BookOpen className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
             <select 
               value={filtroSigla}
               disabled={isRegente}
@@ -179,16 +174,13 @@ const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, mat
                       <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">
                         {aluno.nome.charAt(0)}
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-800 leading-tight">{aluno.nome}</p>
-                      </div>
+                      <p className="font-bold text-slate-800 leading-tight">{aluno.nome}</p>
                     </div>
-                    
                     <div className="flex flex-wrap gap-2">
                       {turmas.map(t => (
                         <div key={t.id} className="flex items-center gap-2 bg-white border border-blue-100 px-3 py-1.5 rounded-xl shadow-sm">
                           <GraduationCap className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="text-xs font-black text-blue-700 uppercase tracking-tight">{t.nome}</span>
+                          <span className="text-xs font-black text-blue-700 uppercase">{t.nome}</span>
                           <span className="text-[9px] font-bold text-slate-400 border-l border-slate-200 pl-2 ml-1">{t.horario.split(' ')[0]}</span>
                         </div>
                       ))}
@@ -198,7 +190,7 @@ const PreparacaoTurmas: React.FC<PreparacaoTurmasProps> = ({ alunos, turmas, mat
               </div>
             ) : (
               <div className="p-20 text-center">
-                <p className="text-slate-400 italic font-medium">Nenhum aluno desta turma possui cursos cadastrados para este dia.</p>
+                <p className="text-slate-400 italic font-medium">Nenhum aluno possui cursos cadastrados para este dia.</p>
               </div>
             )}
           </div>
