@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Users, 
@@ -54,7 +55,6 @@ const formatEscolaridade = (aluno: Aluno) => {
   
   if (!etapa && !ano) return 'Sem Classificação';
   
-  // Padrão solicitado: Estágio-Ano Turma (ex: EI-Grupo 4 A)
   let result = etapa;
   if (ano) {
     result += (result ? `-${ano}` : ano);
@@ -66,6 +66,7 @@ const formatEscolaridade = (aluno: Aluno) => {
   return result.trim() || 'Sem Classificação';
 };
 
+// URL DEFINITIVA: O App usará esta URL como base caso não encontre uma salva localmente.
 const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxR3xc5QoxvEBC0nFaGojOT2v8KG32dmGoSMcYuGt-IJr9TxZ8TLgaGoWWU-3jE-VpfiA/exec";
 const DEFAULT_WHATSAPP_URL = "https://webhook.pluglead.com/webhook/f119b7961a1c6530df9dcec417de5f3e";
 
@@ -80,10 +81,14 @@ const App: React.FC = () => {
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
   const [nextSyncTime, setNextSyncTime] = useState<string | null>(null);
   
-  // Fix: Use ReturnType<typeof setTimeout> instead of NodeJS.Timeout to avoid namespace errors in browser environments
   const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [apiUrl, setApiUrl] = useState(localStorage.getItem('google_script_url') || DEFAULT_API_URL);
+  // Inicializa com a URL salva ou a DEFAULT_API_URL caso esteja vazio
+  const [apiUrl, setApiUrl] = useState(() => {
+    const saved = localStorage.getItem('google_script_url');
+    return (saved && saved.trim() !== "") ? saved : DEFAULT_API_URL;
+  });
+  
   const [whatsappApiUrl, setwhatsappApiUrl] = useState(localStorage.getItem('whatsapp_api_url') || DEFAULT_WHATSAPP_URL);
   const [whatsappToken, setWhatsappToken] = useState(localStorage.getItem('whatsapp_token') || '');
   
@@ -282,7 +287,7 @@ const App: React.FC = () => {
       if (!isAuto) setSyncError(`Falha na conexão com o Sheets.`);
     } finally {
       setIsLoading(false);
-      scheduleNextAutoSync(); // Re-agenda após qualquer tentativa (sucesso ou falha)
+      scheduleNextAutoSync();
     }
   };
 
@@ -297,27 +302,15 @@ const App: React.FC = () => {
     let delayInMinutes = 0;
     let nextScheduledTime = new Date(now);
 
-    // Regras de Horário:
-    // 06h00 (360m) - Início
-    // 06h00 às 11h00 (660m) -> 30 min
-    // 11h00 às 15h00 (900m) -> 15 min
-    // 15h00 às 20h00 (1200m) -> 45 min
-    // 20h00 às 05h45 -> Pausado
-
     if (currentTimeInMinutes < 360) {
-      // Antes das 06:00 -> Agendar para as 06:00
       delayInMinutes = 360 - currentTimeInMinutes;
     } else if (currentTimeInMinutes < 660) {
-      // 06:00 às 11:00 -> Próximo em 30 min
       delayInMinutes = 30;
     } else if (currentTimeInMinutes < 900) {
-      // 11:00 às 15:00 -> Próximo em 15 min
       delayInMinutes = 15;
     } else if (currentTimeInMinutes < 1200) {
-      // 15:00 às 20:00 -> Próximo em 45 min
       delayInMinutes = 45;
     } else {
-      // Após as 20:00 -> Agendar para as 06:00 do dia seguinte
       delayInMinutes = (1440 - currentTimeInMinutes) + 360;
     }
 
@@ -392,7 +385,8 @@ const App: React.FC = () => {
     localStorage.setItem('data_usuarios', JSON.stringify(usuarios));
     localStorage.setItem('data_experimentais', JSON.stringify(experimentais));
     localStorage.setItem('data_acoes_retencao', JSON.stringify(acoesRetencao));
-  }, [alunos, turmas, matriculas, presencas, usuarios, experimentais, acoesRetencao]);
+    localStorage.setItem('google_script_url', apiUrl); // Garante que a URL correta seja persistida
+  }, [alunos, turmas, matriculas, presencas, usuarios, experimentais, acoesRetencao, apiUrl]);
 
   const parseToDate = (dateVal: any): Date | null => {
     if (!dateVal || String(dateVal).trim() === '') return null;
