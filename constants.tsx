@@ -18,3 +18,4 @@ export const INITIAL_PRESENCAS: Presenca[] = [];
 export const INITIAL_USUARIOS: Usuario[] = [
   { login: 'admin', senha: 'admin', nivel: 'Gestor Master' },
   { login: 'professor', senha: '123', nivel: 'Professor' }
+];
