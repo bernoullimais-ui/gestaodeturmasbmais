@@ -41,11 +41,11 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
-  const isGestor = currentUser.nivel === 'Gestor';
+  // ATUALIZADO: Incluindo Gestor Master na verificação de permissão
+  const isGestor = currentUser.nivel === 'Gestor' || currentUser.nivel === 'Gestor Master';
   const isProfessor = currentUser.nivel === 'Professor';
   const isRegente = currentUser.nivel === 'Regente';
 
-  // Normalização de datas para comparação
   const normalizeSheetDate = (dateStr: string) => {
     if (!dateStr) return '';
     if (dateStr.includes('T')) return dateStr.split('T')[0];
@@ -81,7 +81,6 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
     onUpdate({ ...exp, observacaoProfessor: obs });
   };
 
-  // AUTOMAÇÃO: Envio de Confirmação (24h antes)
   const handleSendConfirmation = async (exp: AulaExperimental) => {
     if (!whatsappConfig?.url || !exp.whatsapp1) return;
     
@@ -103,13 +102,12 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
       });
       onUpdate({ ...exp, confirmationSent: true });
     } catch (e) {
-      alert('Falha no envio do Webhook. Tente novamente.');
+      alert('Falha no envio do Webhook.');
     } finally {
       setIsProcessing(null);
     }
   };
 
-  // AUTOMAÇÃO: Follow-up de Conversão (6h após confirmação do professor)
   const handleSendFollowUp = async (exp: AulaExperimental) => {
     if (!whatsappConfig?.url || !exp.whatsapp1) return;
     
@@ -137,20 +135,18 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
     }
   };
 
-  // Lógica de verificação de tempo para follow-up (6 horas)
   const canSendFollowUp = (exp: AulaExperimental) => {
     if (exp.status !== 'Presente' || !exp.dataStatusAtualizado || exp.followUpSent) return false;
     const diffMs = new Date().getTime() - new Date(exp.dataStatusAtualizado).getTime();
-    return diffMs >= (6 * 60 * 60 * 1000); // 6 horas
+    return diffMs >= (6 * 60 * 60 * 1000); 
   };
 
-  // Lógica de verificação de tempo para confirmação (24 horas antes)
   const isTimeForConfirmation = (exp: AulaExperimental) => {
     if (exp.confirmationSent || exp.status !== 'Pendente') return false;
     const aulaDate = new Date(normalizeSheetDate(exp.aula) + 'T00:00:00');
     const today = new Date();
     const diffDays = (aulaDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-    return diffDays <= 1.2 && diffDays > 0; // Próximas 24-30 horas
+    return diffDays <= 1.2 && diffDays > 0;
   };
 
   return (
@@ -220,7 +216,7 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-lg font-bold text-slate-900 leading-tight">{exp.estudante}</h4>
-                      <span className="text-[9px] font-black uppercase bg-purple-100 text-purple-600 px-2 py-0.5 rounded border border-purple-200">Lead Qualificado</span>
+                      <span className="text-[9px] font-black uppercase bg-purple-100 text-purple-600 px-2 py-0.5 rounded border border-purple-200">LEAD QUALIFICADO</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-3 mt-1.5">
                       <span className="text-[10px] font-black text-slate-400 uppercase bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{exp.sigla}</span>
@@ -239,14 +235,14 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
                   </div>
                   
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status Aula</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">STATUS AULA</span>
                     <div className="flex gap-1 mt-1">
                       {(isGestor || isProfessor) ? (
                         <>
-                          <button onClick={() => handleStatusUpdate(exp, 'Presente')} className={`p-1.5 rounded-lg border transition-all ${exp.status === 'Presente' ? 'bg-green-600 border-green-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-300 hover:text-green-600'}`}>
+                          <button onClick={() => handleStatusUpdate(exp, 'Presente')} title="Confirmar Presença" className={`p-1.5 rounded-lg border transition-all ${exp.status === 'Presente' ? 'bg-green-600 border-green-600 text-white shadow-md' : 'bg-white border-slate-200 text-slate-300 hover:text-green-600'}`}>
                             <CheckCircle2 className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleStatusUpdate(exp, 'Ausente')} className={`p-1.5 rounded-lg border transition-all ${exp.status === 'Ausente' ? 'bg-red-500 border-red-500 text-white shadow-md' : 'bg-white border-slate-200 text-slate-300 hover:text-red-500'}`}>
+                          <button onClick={() => handleStatusUpdate(exp, 'Ausente')} title="Marcar Ausência" className={`p-1.5 rounded-lg border transition-all ${exp.status === 'Ausente' ? 'bg-red-500 border-red-500 text-white shadow-md' : 'bg-white border-slate-200 text-slate-300 hover:text-red-500'}`}>
                             <XCircle className="w-4 h-4" />
                           </button>
                         </>
@@ -272,7 +268,6 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
 
               {expandedId === exp.id && (
                 <div className="px-6 pb-6 pt-2 animate-in slide-in-from-top-4 duration-300 flex flex-col md:flex-row gap-6">
-                  {/* ÁREA DE FEEDBACK DO PROFESSOR */}
                   <div className="flex-1 space-y-4">
                     <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-3">
                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -285,16 +280,12 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
                           placeholder="Como foi o interesse e habilidade do estudante durante a aula experimental?"
                           className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-medium outline-none focus:border-purple-500 min-h-[100px] resize-none"
                        />
-                       <p className="text-[9px] text-slate-400 italic font-medium">Este texto será usado pela secretaria para fundamentar o contato de matrícula.</p>
                     </div>
                   </div>
 
-                  {/* ÁREA DE AUTOMAÇÃO COMERCIAL (EXCLUSIVO GESTOR) */}
                   {isGestor && (
                     <div className="w-full md:w-80 space-y-3">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Automações de Funil</p>
-                      
-                      {/* Gatilho 1: 24h Antes */}
                       <button 
                         onClick={() => handleSendConfirmation(exp)}
                         disabled={isProcessing === exp.id + '-conf' || exp.confirmationSent || exp.status !== 'Pendente'}
@@ -309,10 +300,8 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
                           {exp.confirmationSent ? <CheckCircle2 className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
                         </div>
                         <span className="text-xs font-bold leading-tight">Enviar Boas-vindas (24h antes)</span>
-                        {isProcessing === exp.id + '-conf' && <RefreshCw className="w-3 h-3 animate-spin mt-1" />}
                       </button>
 
-                      {/* Gatilho 2: 6h Depois */}
                       <button 
                         onClick={() => handleSendFollowUp(exp)}
                         disabled={isProcessing === exp.id + '-follow' || exp.followUpSent || !canSendFollowUp(exp)}
@@ -327,10 +316,6 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
                           {exp.followUpSent ? <CheckCircle2 className="w-4 h-4" /> : <Timer className="w-4 h-4" />}
                         </div>
                         <span className="text-xs font-bold leading-tight">Consultar Percepção (6h pós)</span>
-                        {isProcessing === exp.id + '-follow' && <RefreshCw className="w-3 h-3 animate-spin mt-1 text-white" />}
-                        {exp.status === 'Presente' && !exp.followUpSent && !canSendFollowUp(exp) && (
-                          <span className="text-[8px] font-black uppercase tracking-tighter mt-1 opacity-60">Aguardando intervalo de 6h</span>
-                        )}
                       </button>
                     </div>
                   )}
@@ -339,12 +324,11 @@ const AulasExperimentais: React.FC<AulasExperimentaisProps> = ({
             </div>
           )) : (
             <div className="p-24 text-center space-y-6">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto shadow-inner">
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                 <FlaskConical className="w-10 h-10 text-slate-200" />
               </div>
               <div>
                 <h4 className="text-xl font-bold text-slate-800">Sem agendamentos para esta data</h4>
-                <p className="text-slate-400 max-w-xs mx-auto text-sm font-medium mt-1">Verifique outras datas ou aguarde a sincronização de novos agendamentos via planilha.</p>
               </div>
             </div>
           )}
