@@ -281,9 +281,10 @@ const DadosAlunos: React.FC<DadosAlunosProps> = ({
                     </div>
                   </div>
 
-                  <div className="space-y-4 border-l border-slate-50 md:pl-6">
+                  <div className="space-y-5 border-l border-slate-50 md:pl-6">
+                    {/* Responsável 1 */}
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Responsável 1</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsável 1</p>
                       <div className="font-bold text-slate-700 text-sm leading-tight mb-1">{aluno.responsavel1 || '--'}</div>
                       {isValidContact(aluno.whatsapp1) && (
                         <button 
@@ -298,21 +299,24 @@ const DadosAlunos: React.FC<DadosAlunosProps> = ({
                       )}
                     </div>
 
-                    <div className="space-y-1 pt-2 border-t border-slate-50">
-                      <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest">Responsável 2</p>
-                      <div className="font-bold text-slate-700 text-sm leading-tight mb-1">{aluno.responsavel2 || '--'}</div>
-                      {isValidContact(aluno.whatsapp2) && (
-                        <button 
-                          onClick={() => {
-                            setMessagingTarget({ name: aluno.responsavel2 || 'Responsável', phone: aluno.whatsapp2!, studentName: aluno.nome });
-                            setCustomMessage(`Olá ${aluno.responsavel2?.split(' ')[0]}, aqui é da coordenação da B+. Gostaria de falar sobre o(a) aluno(a) ${aluno.nome.split(' ')[0]}.`);
-                          }}
-                          className="flex items-center gap-2 text-green-600 font-bold text-xs hover:bg-green-50 px-2 py-1 rounded-lg transition-colors"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" /> {aluno.whatsapp2}
-                        </button>
-                      )}
-                    </div>
+                    {/* Responsável 2 */}
+                    {(aluno.responsavel2 || aluno.whatsapp2) && (
+                      <div className="space-y-1 pt-2 border-t border-slate-50">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsável 2</p>
+                        <div className="font-bold text-slate-700 text-sm leading-tight mb-1">{aluno.responsavel2 || '--'}</div>
+                        {isValidContact(aluno.whatsapp2) && (
+                          <button 
+                            onClick={() => {
+                              setMessagingTarget({ name: aluno.responsavel2 || 'Responsável', phone: aluno.whatsapp2!, studentName: aluno.nome });
+                              setCustomMessage(`Olá ${aluno.responsavel2?.split(' ')[0]}, aqui é da coordenação da B+. Gostaria de falar sobre o(a) aluno(a) ${aluno.nome.split(' ')[0]}.`);
+                            }}
+                            className="flex items-center gap-2 text-green-600 font-bold text-xs hover:bg-green-50 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" /> {aluno.whatsapp2}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -406,32 +410,28 @@ const DadosAlunos: React.FC<DadosAlunosProps> = ({
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Seção de Responsáveis na Edição */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-blue-600 uppercase ml-1">Responsável 1</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Responsável 1</label>
                     <input type="text" value={editingAluno.responsavel1 || ''} onChange={(e) => setEditingAluno({...editingAluno, responsavel1: e.target.value})} className="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-blue-600 uppercase ml-1">WhatsApp 1</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp 1</label>
                     <input type="text" value={editingAluno.whatsapp1 || ''} onChange={(e) => setEditingAluno({...editingAluno, whatsapp1: e.target.value})} className="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold" />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-purple-600 uppercase ml-1">Responsável 2</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Responsável 2</label>
                     <input type="text" value={editingAluno.responsavel2 || ''} onChange={(e) => setEditingAluno({...editingAluno, responsavel2: e.target.value})} className="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-purple-600 uppercase ml-1">WhatsApp 2</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">WhatsApp 2</label>
                     <input type="text" value={editingAluno.whatsapp2 || ''} onChange={(e) => setEditingAluno({...editingAluno, whatsapp2: e.target.value})} className="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold" />
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">E-mail de Contato</label>
-                <input type="email" value={editingAluno.email || ''} onChange={(e) => setEditingAluno({...editingAluno, email: e.target.value})} className="w-full px-5 py-3 bg-slate-50 border-2 border-slate-100 rounded-2xl font-bold" />
               </div>
             </div>
 
