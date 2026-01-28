@@ -49,9 +49,9 @@ const BPlusLogo: React.FC<{ className?: string }> = ({ className = "w-8 h-8" }) 
 );
 
 const formatEscolaridade = (aluno: Aluno) => {
-  const etapa = (aluno.etapa || '').trim(); // EI, EF, EM
-  const ano = (aluno.anoEscolar || '').trim();     // Grupo 4, 3º, etc
-  const turma = (aluno.turmaEscolar || '').trim(); // A, B, C
+  const etapa = (aluno.etapa || '').trim();
+  const ano = (aluno.anoEscolar || '').trim();
+  const turma = (aluno.turmaEscolar || '').trim();
   
   if (!etapa && !ano) return 'Sem Classificação';
   
@@ -66,7 +66,6 @@ const formatEscolaridade = (aluno: Aluno) => {
   return result.trim() || 'Sem Classificação';
 };
 
-// URL DEFINITIVA: O App usará esta URL como base caso não encontre uma salva localmente.
 const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbxR3xc5QoxvEBC0nFaGojOT2v8KG32dmGoSMcYuGt-IJr9TxZ8TLgaGoWWU-3jE-VpfiA/exec";
 const DEFAULT_WHATSAPP_URL = "https://webhook.pluglead.com/webhook/f119b7961a1c6530df9dcec417de5f3e";
 
@@ -83,7 +82,6 @@ const App: React.FC = () => {
   
   const autoSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Inicializa com a URL salva ou a DEFAULT_API_URL caso esteja vazio
   const [apiUrl, setApiUrl] = useState(() => {
     const saved = localStorage.getItem('google_script_url');
     return (saved && saved.trim() !== "") ? saved : DEFAULT_API_URL;
@@ -159,37 +157,13 @@ const App: React.FC = () => {
         if (mappedTurmas.length > 0) setTurmas(mappedTurmas);
       }
 
-      if (data.experimental && Array.isArray(data.experimental)) {
-        data.experimental.forEach((e: any) => {
-          const nome = getFuzzyValue(e, ['estudante', 'aluno', 'nome']);
-          if (!nome) return;
-          const id = nome.replace(/\s+/g, '_').toLowerCase();
-          const escolaridadeRaw = getFuzzyValue(e, ['escolaridade', 'etapa', 'nivel', 'sigla', 'estagio'], ['turma', 'curso', 'modalidade', 'aula', 'horario']);
-          const anoRaw = getFuzzyValue(e, ['ano', 'serie', 'ano escolar', 'anoescolar'], ['turma', 'curso', 'modalidade']);
-          const etapa = mapEtapa(escolaridadeRaw) || mapEtapa(anoRaw);
-          const ano = anoRaw.replace(/ano|série|serie|ensino|fundamental|médio|medio|infantil|educação|educacao|EI|EF|EM|[-]/gi, '').trim();
-          const turmaEscolar = getFuzzyValue(e, ['turma escolar', 'letra', 'classe', 'turmaescolar'], ['turma_sport', 'curso']).replace(/turma/gi, '').trim();
-          const resp1 = getFuzzyValue(e, ['responsavel 1', 'responsavel1', 'mae', 'pai', 'mae/responsavel', 'responsavel'], ['turma', 'curso', 'modalidade', 'aula', 'horario', 'serie']);
-          const zap1 = cleanPhonePrefix(getFuzzyValue(e, ['whatsapp1', 'celular', 'whatsapp 1', 'telefone', 'contato_fone']));
-          
-          if (!newAlunosMap.has(id)) {
-            newAlunosMap.set(id, {
-              id, nome, dataNascimento: '--', contato: zap1,
-              etapa, anoEscolar: ano, turmaEscolar,
-              responsavel1: resp1, whatsapp1: zap1,
-              isLead: true, statusMatricula: 'Lead Qualificado'
-            });
-          }
-        });
-      }
-
       if (data.base && Array.isArray(data.base)) {
         const rawMatriculas: Matricula[] = [];
         const canceladosMap = new Map<string, CursoCancelado[]>();
 
         data.base.forEach((row: any) => {
           const nome = getFuzzyValue(row, ['estudante', 'nome', 'aluno']);
-          if (nome.length < 2) return;
+          if (!nome || nome.length < 2) return;
           const id = nome.replace(/\s+/g, '_').toLowerCase();
           const curso = getFuzzyValue(row, ['modalidade', 'curso', 'turma_sport', 'aula', 'plano', 'cur']).trim();
           const statusRaw = getFuzzyValue(row, ['status', 'ativo', 'situa', 'matri', 'situacao', 'ativado']).toLowerCase();
@@ -202,8 +176,10 @@ const App: React.FC = () => {
           const etapa = mapEtapa(escolarCompleto);
           const ano = escolarCompleto.replace(/ensino|fundamental|médio|medio|infantil|educação|educacao|estágio|estagio|ano|série|serie|EF|EI|EM|[-/]/gi, ' ').trim();
           const teClean = getFuzzyValue(row, ['turma escolar', 'letra', 'classe', 'turmaescolar']).replace(/turma/gi, '').trim();
-          const w1Raw = getFuzzyValue(row, ['whatsapp1', 'whatsapp 1', 'tel1']);
-          const w2Raw = getFuzzyValue(row, ['whatsapp2', 'whatsapp 2', 'tel2']);
+          
+          // Mapeamento ampliado para Responsaveis
+          const w1Raw = getFuzzyValue(row, ['whatsapp1', 'whatsapp 1', 'tel1', 'celular1']);
+          const w2Raw = getFuzzyValue(row, ['whatsapp2', 'whatsapp 2', 'tel2', 'celular2', 'contato 2', 'fone 2']);
           const contactRaw = getFuzzyValue(row, ['whatsapp', 'tel', 'contato']);
 
           const existingAluno = newAlunosMap.get(id);
@@ -215,9 +191,9 @@ const App: React.FC = () => {
               id, nome, dataNascimento: nascRaw, contato: cleanPhonePrefix(contactRaw),
               etapa, anoEscolar: ano, turmaEscolar: teClean, dataMatricula: enrollmentDateRaw,
               email: getFuzzyValue(row, ['email', 'correio']),
-              responsavel1: getFuzzyValue(row, ['responsavel 1', 'responsavel1', 'mae', 'mae/responsavel'], ['turma', 'curso', 'modalidade', 'horario']),
+              responsavel1: getFuzzyValue(row, ['responsavel 1', 'responsavel1', 'mae', 'mãe', 'mae/responsavel', 'responsavel'], ['turma', 'curso', 'modalidade', 'horario']),
               whatsapp1: cleanPhonePrefix(w1Raw),
-              responsavel2: getFuzzyValue(row, ['responsavel 2', 'responsavel2', 'pai', 'pai/responsavel'], ['turma', 'curso', 'modalidade', 'horario']),
+              responsavel2: getFuzzyValue(row, ['responsavel 2', 'responsavel2', 'pai', 'pai/responsavel', 'responsável 2', 'contato 2'], ['turma', 'curso', 'modalidade', 'horario']),
               whatsapp2: cleanPhonePrefix(w2Raw),
               statusMatricula: statusRaw, dataCancelamento: cancellationDateRaw,
               cursosCanceladosDetalhes: existingAluno?.cursosCanceladosDetalhes || [], isLead: false
@@ -252,28 +228,27 @@ const App: React.FC = () => {
       }
 
       if (data.experimental && Array.isArray(data.experimental)) {
-        const mappedExp = data.experimental.map((e: any) => {
+        data.experimental.forEach((e: any) => {
           const nome = getFuzzyValue(e, ['estudante', 'aluno', 'nome']);
+          if (!nome) return;
           const id = nome.replace(/\s+/g, '_').toLowerCase();
           const escolaridadeRaw = getFuzzyValue(e, ['escolaridade', 'etapa', 'nivel', 'sigla', 'estagio'], ['turma', 'curso', 'modalidade', 'aula', 'horario']);
           const anoRaw = getFuzzyValue(e, ['ano', 'serie', 'ano escolar', 'anoescolar'], ['turma', 'curso', 'modalidade']);
           const etapa = mapEtapa(escolaridadeRaw) || mapEtapa(anoRaw);
           const ano = anoRaw.replace(/ano|série|serie|ensino|fundamental|médio|medio|infantil|educação|educacao|EI|EF|EM|[-]/gi, '').trim();
-          const teClean = getFuzzyValue(e, ['turma escolar', 'letra', 'classe', 'turmaescolar'], ['turma_sport', 'curso']).replace(/turma/gi, '').trim();
-          let siglaFormatada = etapa;
-          if (ano) siglaFormatada += (siglaFormatada ? `-${ano}` : ano);
-          if (teClean) siglaFormatada += ` ${teClean}`;
-          return {
-            id: `EXP-${id}-${getFuzzyValue(e, ['aula', 'data']).replace(/\//g, '-')}`,
-            estudante: nome, sigla: siglaFormatada || '--',
-            curso: getFuzzyValue(e, ['curso', 'modalidade', 'turma_sport']),
-            aula: getFuzzyValue(e, ['aula', 'data', 'agendamento']),
-            responsavel1: getFuzzyValue(e, ['responsavel 1', 'responsavel1', 'mae'], ['turma', 'curso', 'modalidade']),
-            whatsapp1: cleanPhonePrefix(getFuzzyValue(e, ['whatsapp1', 'whatsapp 1', 'celular'])),
-            status: 'Pendente'
-          };
-        }).filter(e => e.estudante);
-        setExperimentais(mappedExp);
+          const turmaEscolar = getFuzzyValue(e, ['turma escolar', 'letra', 'classe', 'turmaescolar'], ['turma_sport', 'curso']).replace(/turma/gi, '').trim();
+          const resp1 = getFuzzyValue(e, ['responsavel 1', 'responsavel1', 'mae', 'pai', 'mae/responsavel', 'responsavel'], ['turma', 'curso', 'modalidade', 'aula', 'horario', 'serie']);
+          const zap1 = cleanPhonePrefix(getFuzzyValue(e, ['whatsapp1', 'celular', 'whatsapp 1', 'telefone', 'contato_fone']));
+          
+          if (!newAlunosMap.has(id)) {
+            newAlunosMap.set(id, {
+              id, nome, dataNascimento: '--', contato: zap1,
+              etapa, anoEscolar: ano, turmaEscolar,
+              responsavel1: resp1, whatsapp1: zap1,
+              isLead: true, statusMatricula: 'Lead Qualificado'
+            });
+          }
+        });
       }
       
       const nowStr = new Date().toLocaleString('pt-BR');
@@ -385,7 +360,7 @@ const App: React.FC = () => {
     localStorage.setItem('data_usuarios', JSON.stringify(usuarios));
     localStorage.setItem('data_experimentais', JSON.stringify(experimentais));
     localStorage.setItem('data_acoes_retencao', JSON.stringify(acoesRetencao));
-    localStorage.setItem('google_script_url', apiUrl); // Garante que a URL correta seja persistida
+    localStorage.setItem('google_script_url', apiUrl);
   }, [alunos, turmas, matriculas, presencas, usuarios, experimentais, acoesRetencao, apiUrl]);
 
   const parseToDate = (dateVal: any): Date | null => {
@@ -447,7 +422,7 @@ const App: React.FC = () => {
 
   const cleanPhonePrefix = (val: string): string => {
     if (!val) return '';
-    let cleaned = val.trim();
+    let cleaned = val.toString().trim();
     if (cleaned.startsWith('+55')) return cleaned.substring(3).trim();
     return cleaned;
   };
