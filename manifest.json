@@ -1,0 +1,21 @@
+
+{
+  "short_name": "Gestão B+",
+  "name": "Gestão de Turmas B+ Profissional",
+  "icons": [
+    {
+      "src": "https://api.dicebear.com/7.x/initials/png?seed=B&backgroundColor=1d3ba3&fontSize=75&size=192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://api.dicebear.com/7.x/initials/png?seed=B&backgroundColor=1d3ba3&fontSize=75&size=512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#1d3ba3",
+  "background_color": "#ffffff"
+}
